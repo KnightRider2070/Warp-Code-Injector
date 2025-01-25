@@ -1,0 +1,12 @@
+builds:
+  - id: main
+    main: ./main.go
+    goos:
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # Optional: Customize the file name pattern
+    ldflags: >
+      -s -w

@@ -1,0 +1,137 @@
+name: GO Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # Test stage
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest, macos-latest ]
+        go-version: [ 1.23 ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+
+      - name: Install dependencies
+        run: go mod tidy && go mod download
+
+      # macOS-specific Tests
+      - name: Run Unit Tests on macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Running tests on macOS"
+          go test -v ./... -coverprofile=coverage.out | tee test_output.txt
+        shell: bash
+
+      # Windows-specific Tests
+      - name: Run Unit Tests on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "Running tests on Windows"
+          go test -v ./... | Tee-Object -FilePath windows_test_output.txt
+        shell: pwsh
+
+      # Upload test results for macOS
+      - name: Upload Test Results for macOS
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-test-results
+          path: test_output.txt
+
+      # Upload test results for Windows
+      - name: Upload Test Results for Windows
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-results
+          path: windows_test_output.txt
+
+      # Upload coverage report (only for macOS as an example)
+      - name: Upload Coverage Report
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-macos
+          path: coverage.out
+
+  # Build stage
+  build:
+    needs: test  # Runs only if the test job passes
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest, macos-latest ]
+        arch: [ amd64, arm64 ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+
+      - name: Install dependencies
+        run: go mod tidy && go mod download
+
+      # Build for macOS
+      - name: Build for macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          GOOS=darwin GOARCH=${{ matrix.arch }} go build -o wci-macos-${{ matrix.arch }} .
+        shell: bash
+
+      # Build for Windows
+      - name: Build for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $GOOS="windows"; $GOARCH="${{ matrix.arch }}"; go build -o wci-${{ matrix.arch }}.exe .
+        shell: pwsh
+
+      # Upload macOS build artifact
+      - name: Upload macOS Build
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wci-macos-${{ matrix.arch }}
+          path: wci-macos-${{ matrix.arch }}
+
+      # Upload Windows build artifact
+      - name: Upload Windows Build
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wci-windows-${{ matrix.arch }}
+          path: wci-${{ matrix.arch }}.exe
