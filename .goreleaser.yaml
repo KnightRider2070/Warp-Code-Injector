@@ -1,12 +1,83 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# GoReleaser Configuration for Warp Code Injector (WCI)
+
+version: 2
+
+# Environment Variables
+env:
+  - GO111MODULE=on
+
+# Before Hooks
+before:
+  hooks:
+    - go mod tidy
+
+# Snapshot Versioning
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+
+# Metadata
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+# Builds Configuration (Only Windows and macOS)
 builds:
-  - id: main
+  - id: wci
     main: ./main.go
+    env:
+      - CGO_ENABLED=0
     goos:
       - windows
       - darwin
     goarch:
       - amd64
       - arm64
-    # Optional: Customize the file name pattern
     ldflags: >
-      -s -w
+      -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
+    artifacts:
+      - bin
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+# Checksums
+checksum:
+  name_template: "checksums.txt"
+
+# Changelog
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^test:"
+      - "^docs:"
+      - "^chore:"
+      - Merge branch
+      - Merge pull request
+  groups:
+    - title: Features
+      regexp: "^feat"
+    - title: Bug Fixes
+      regexp: "^fix"
+    - title: Documentation
+      regexp: "^docs"
+    - title: Refactoring
+      regexp: "^refactor"
+    - title: Chores
+      regexp: "^chore"
+
+# Archives
+archives:
+  - format: zip
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE.md
+      - README.md
+
+# Release Configuration
+release:
+  name_template: "Warp Code Injector v{{ .Version }}"
+  footer: |
+    **Changelog**: https://github.com/KnightRider2070/Warp-Code-Injector/compare/{{ .PreviousTag }}...{{ .Tag }}
+    ---
+    Contribute: https://github.com/KnightRider2070/Warp-Code-Injector
