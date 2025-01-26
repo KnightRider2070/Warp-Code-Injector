@@ -16,7 +16,6 @@ before:
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
-
 # Metadata
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
@@ -63,14 +62,6 @@ changelog:
       regexp: "^refactor"
     - title: Chores
       regexp: "^chore"
-
-# Archives
-archives:
-  - format: zip
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    files:
-      - LICENSE.md
-      - README.md
 
 # Release Configuration
 release:
