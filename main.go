@@ -5,15 +5,10 @@ import (
 	"os"
 	"time"
 	"wci/cmd"
+	"wci/config"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-)
-
-var (
-	Version = "dev"
-	noColor = false
-	appName = "Warp Code Injector"
 )
 
 func main() {
@@ -39,16 +34,18 @@ func configureLogging() {
 	logLevel := parseLogLevel(os.Getenv("LOGLEVEL"))
 
 	// Enable or disable colored output based on the DEBUG environment variable
-	if os.Getenv("DEBUG") != "" {
-		noColor = true
-	}
+	config.NoColor = os.Getenv("DEBUG") == ""
 
+	// Configure zerolog without the "version" field for logs
 	zerolog.SetGlobalLevel(logLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: time.RFC3339,
-		NoColor:    noColor,
+		NoColor:    config.NoColor,
 	})
+
+	// Log the selected log level
+	log.Debug().Str("logLevel", logLevel.String()).Msg("Logging configured")
 }
 
 // parseLogLevel converts a string log level to a zerolog.Level.
@@ -75,13 +72,15 @@ func parseLogLevel(level string) zerolog.Level {
 
 // displayStartupInfo prints the application banner and version information.
 func displayStartupInfo() {
+	log.Info().Msg("Application starting...")
+
 	logo, err := loadLogo()
 	if err != nil {
 		log.Error().Msgf("Error loading logo: %v", err)
 	} else {
 		fmt.Printf("\n%s\n", logo)
 	}
-	fmt.Printf("---\n%s Version: %s\n---\n", appName, Version)
+	fmt.Printf("---\n%s\nVersion: %s\nVersion Number: %s\n---\n", config.AppName, config.Version, config.VersionNumber)
 }
 
 // loadLogo returns the ASCII logo for the application (replace with your logo).

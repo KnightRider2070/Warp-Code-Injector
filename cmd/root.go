@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -24,8 +23,30 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	rootCmd.CompletionOptions.DisableDefaultCmd = false
+}
+
 // Execute is the entry point for the CLI application
 func Execute() error {
+
+	rootCmd.SetUsageTemplate(`
+Usage:
+  wci [command]
+
+Available Commands:
+  list       List all savegames
+  add-biter-killer   Injects the biter killer script
+  clean      Cleans up temporary files
+
+Examples:
+  # List all savegames
+  wci list
+
+  # Inject the biter killer script into a savegame
+  wci add-biter-killer 2
+`)
+
 	// Load listedSaveGames from file at startup
 	if err := loadListedSaveGames(); err != nil {
 		fmt.Printf("Failed to load savegames data: %v\n", err)
@@ -43,43 +64,6 @@ func Execute() error {
 	// Save listedSaveGames to file on shutdown
 	if err := saveListedSaveGames(); err != nil {
 		fmt.Printf("Failed to save savegames data: %v\n", err)
-	}
-
-	return nil
-}
-
-// saveListedSaveGames saves the listedSaveGames map to a file
-func saveListedSaveGames() error {
-	file, err := os.Create(saveGamesFile)
-	if err != nil {
-		return fmt.Errorf("failed to create savegames file: %w", err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(listedSaveGames); err != nil {
-		return fmt.Errorf("failed to encode savegames data: %w", err)
-	}
-
-	return nil
-}
-
-// loadListedSaveGames loads the listedSaveGames map from a file
-func loadListedSaveGames() error {
-	if _, err := os.Stat(saveGamesFile); os.IsNotExist(err) {
-		listedSaveGames = make(map[int]string) // Initialize with an empty map if file doesn't exist
-		return nil
-	}
-
-	file, err := os.Open(saveGamesFile)
-	if err != nil {
-		return fmt.Errorf("failed to open savegames file: %w", err)
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&listedSaveGames); err != nil {
-		return fmt.Errorf("failed to decode savegames data: %w", err)
 	}
 
 	return nil
