@@ -20,7 +20,7 @@ and modders alike.
 
 - **Purpose**: Completely removes biters from the savegame world *without deactivating achievements*!
 - **Command in Game**: `/cleanup_biters`
-- **Script Location**: [biter-killer.lua](embedded/lua-scripts/biter_killer.lua)
+- **Script Location**: [biter-killer.lua](embedded/lua_injections/biter_killer.lua)
 
 ---
 
